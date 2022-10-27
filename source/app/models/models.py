@@ -159,6 +159,18 @@ class CaseEventsIoc(db.Model):
     ioc = relationship('Ioc')
     case = relationship('Cases')
 
+class CaseEventsEvidence(db.Model):
+    __tablename__ = 'case_events_evidence'
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(ForeignKey('cases_events.event_id'))
+    evidence_id = Column(ForeignKey('data_store_file.file_id'))
+    case_id = Column(ForeignKey('cases.case_id'))
+
+    event = relationship('CasesEvent')
+    evidence = relationship('DataStoreFile')
+    case = relationship('Cases')
+
 
 class ObjectState(db.Model):
     object_id = Column(Integer, primary_key=True)

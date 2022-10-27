@@ -21,6 +21,7 @@ function add_event() {
             data_sent['event_tags'] = $('#event_tags').val();
             data_sent['event_assets'] = $('#event_assets').val();
             data_sent['event_iocs'] = $('#event_iocs').val();
+            data_sent['event_evidence'] = $('#event_evidence').val();
             data_sent['event_tz'] = $('#event_tz').val();
             ret = get_custom_attributes_fields();
             has_error = ret[0].length > 0;
@@ -69,6 +70,7 @@ function update_event(id) {
     data_sent['event_tags'] = $('#event_tags').val();
     data_sent['event_assets'] = $('#event_assets').val();
     data_sent['event_iocs'] = $('#event_iocs').val();
+    data_sent['event_evidence'] = $('#event_evidence').val();
     data_sent['event_tz'] = $('#event_tz').val();
     ret = get_custom_attributes_fields();
     has_error = ret[0].length > 0;

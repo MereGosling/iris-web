@@ -141,6 +141,7 @@ class CaseEventForm(FlaskForm):
     event_content = TextAreaField(u'Event Description')
     event_raw = TextAreaField(u'Event Raw data')
     event_assets = SelectField(u'Event Asset')
+    event_evidence = SelectField(u'Event Evidence')
     event_category_id = SelectField(u'Event Category')
     event_tz = StringField(u'Event Timezone', validators=[DataRequired()])
     event_in_summary = BooleanField(u'Add to summary')

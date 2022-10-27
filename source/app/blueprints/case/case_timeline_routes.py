@@ -35,7 +35,7 @@ from sqlalchemy import func
 from sqlalchemy import or_
 
 from app import db
-from app.datamgmt.case.case_events_db import delete_event_category
+from app.datamgmt.case.case_events_db import delete_event_category, get_case_evidences_for_tm, get_event_evidences_ids, update_event_evidences
 from app.datamgmt.case.case_events_db import get_case_assets_for_tm
 from app.datamgmt.case.case_events_db import get_case_event
 from app.datamgmt.case.case_events_db import get_case_iocs_for_tm
@@ -56,7 +56,7 @@ from app.iris_engine.utils.common import parse_bf_date_format
 from app.iris_engine.utils.tracker import track_activity
 from app.models.cases import Cases
 from app.models.cases import CasesEvent
-from app.models.models import AssetsType
+from app.models.models import AssetsType, CaseEventsEvidence
 from app.models.models import CaseAssets
 from app.models.models import CaseEventsAssets
 from app.models.models import CaseEventsIoc
@@ -524,6 +524,11 @@ def case_delete_event(cur_id, caseid):
         CaseEventsIoc.case_id == caseid
     ).delete()
 
+    CaseEventsEvidence.query.filter(
+        CaseEventsEvidence.event_id == cur_id,
+        CaseEventsEvidence.case_id == caseid
+    ).delete()
+
     db.session.commit()
 
     db.session.delete(event)
@@ -550,10 +555,12 @@ def event_view(cur_id, caseid):
 
     linked_assets = get_event_assets_ids(cur_id, caseid)
     linked_iocs = get_event_iocs_ids(cur_id, caseid)
+    linked_evidence = get_event_evidences_ids(cur_id, caseid)
 
     output = event_schema.dump(event)
     output['event_assets'] = linked_assets
     output['event_iocs'] = linked_iocs
+    output['event_evidence'] = linked_evidence
     output['event_category_id'] = event.category[0].id
 
     return response_success(data=output)
@@ -582,15 +589,17 @@ def event_view_modal(cur_id, caseid, url_redir):
 
     assets = get_case_assets_for_tm(caseid)
     iocs = get_case_iocs_for_tm(caseid)
+    evidences = get_case_evidences_for_tm(caseid)
 
     assets_prefill = get_event_assets_ids(cur_id, caseid)
     iocs_prefill = get_event_iocs_ids(cur_id, caseid)
+    evidences_prefill = get_event_evidences_ids(cur_id, caseid)
 
     usr_name, = User.query.filter(User.id == event.user_id).with_entities(User.name).first()
 
     return render_template("modal_add_case_event.html", form=form, event=event, user_name=usr_name, tags=event_tags,
-                           assets=assets, iocs=iocs,
-                           assets_prefill=assets_prefill, iocs_prefill=iocs_prefill,
+                           assets=assets, iocs=iocs, evidences=evidences,
+                           assets_prefill=assets_prefill, iocs_prefill=iocs_prefill, evidences_prefill=evidences_prefill,
                            category=event.category, attributes=event.custom_attributes)
 
 
@@ -637,6 +646,12 @@ def case_edit_event(cur_id, caseid):
         if not success:
             return response_error('Error while saving linked iocs', data=log)
 
+        success, log = update_event_evidences(event_id=event.event_id,
+                                         caseid=caseid,
+                                         ievidences_list=request_data.get('event_evidence'))
+        if not success:
+            return response_error('Error while saving linked evidences', data=log)
+
         event = call_modules_hook('on_postload_event_update', data=event, caseid=caseid)
 
         track_activity("updated event {}".format(cur_id), caseid=caseid)
@@ -657,13 +672,14 @@ def case_add_event_modal(caseid, url_redir):
     form = CaseEventForm()
     assets = get_case_assets_for_tm(caseid)
     iocs = get_case_iocs_for_tm(caseid)
+    evidences = get_case_evidences_for_tm(caseid)
     def_cat = get_default_cat()
     categories = get_events_categories()
     form.event_category_id.choices = categories
     form.event_in_graph.data = True
 
     return render_template("modal_add_case_event.html", form=form, event=event,
-                           tags=event_tags, assets=assets, iocs=iocs, assets_prefill=None, category=def_cat,
+                           tags=event_tags, assets=assets, iocs=iocs, evidences=evidences, assets_prefill=None, category=def_cat,
                            attributes=event.custom_attributes)
 
 
@@ -715,6 +731,12 @@ def case_add_event(caseid):
                                          iocs_list=request_data.get('event_iocs'))
         if not success:
             return response_error('Error while saving linked iocs', data=log)
+
+        success, log = update_event_evidences(event_id=event.event_id,
+                                         caseid=caseid,
+                                         ievidences_list=request_data.get('event_evidence'))
+        if not success:
+            return response_error('Error while saving linked evidences', data=log)
 
         setattr(event, 'event_category_id', request_data.get('event_category_id'))
 
@@ -778,6 +800,14 @@ def case_duplicate_event(cur_id, caseid):
                                          iocs_list=iocs_list)
         if not success:
             return response_error('Error while saving linked iocs', data=log)
+
+        # Update iocs mapping
+        evidences_list = get_event_evidences_ids(old_event.event_id, caseid)
+        success, log = update_event_evidences(event_id=event.event_id,
+                                         caseid=caseid,
+                                         evidences_list=evidences_list)
+        if not success:
+            return response_error('Error while saving linked evidences', data=log)
 
         event = call_modules_hook('on_postload_event_create', data=event, caseid=caseid)
 

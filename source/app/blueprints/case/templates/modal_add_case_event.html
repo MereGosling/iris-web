@@ -110,6 +110,16 @@
                                     </div>
                                 </div>
                                 <div class="row">
+                                    <div class="form-group col-12">
+                                        <label for="event_assets">Link to Evidence
+                                        </label>
+                                        <div class="select2-input ml-12" data-select2-id="6">
+                                            <select id="event_evidence" name="event_evidence" class="form-control select2-hidden-accessible ml-12" multiple="" data-select2-id="event_evidence" tabindex="-1" aria-hidden="true" style="width: 100%">
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row">
 
                                 </div>
                                 <div class="row">
@@ -249,6 +259,20 @@ $('#event_category_id').selectpicker({
     </script>
 {% endif %}
 
+{% if evidences %}
+    <script>
+        var data = [
+            {% for e in evidences %}
+                {
+                    id: {{ e.evidence_id }},
+                    text: {{ e.file_local_name  }}
+                },
+            {% endfor %}
+        ];
+        $('#event_evidence').select2({ data: data });
+    </script>
+{% endif %}
+
 {% if category %}
     <script>
         $('#event_category_id').val([
@@ -278,5 +302,14 @@ $('#event_category_id').selectpicker({
             {% for ioc in iocs_prefill %} {{ ioc }}, {% endfor %}
         ]);
         $('#event_iocs').trigger('change');
+    </script>
+{% endif %}
+
+{% if evidences_prefill %}
+    <script>
+        $('#event_evidence').val([
+            {% for evidence in evidences_prefill %} {{ evidence }}, {% endfor %}
+        ]);
+        $('#event_evidence').trigger('change');
     </script>
 {% endif %}

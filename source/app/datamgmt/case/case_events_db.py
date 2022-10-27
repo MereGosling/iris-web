@@ -31,6 +31,7 @@ from app.models import EventCategory
 from app.models import Ioc
 from app.models import IocLink
 from app.models import IocType
+from app.models import CaseEventsEvidence, DataStoreFile
 
 
 def get_case_events_assets_graph(caseid):
@@ -80,6 +81,24 @@ def get_case_events_ioc_graph(caseid):
 
     return events
 
+def get_case_events_evidence_graph(caseid):
+    events = CaseEventsEvidence.query.with_entities(
+        CaseEventsEvidence.event_id,
+        CasesEvent.event_title,
+        CasesEvent.event_date,
+        DataStoreFile.file_id,
+        DataStoreFile.file_local_name,
+        DataStoreFile.file_description
+    ).filter(and_(
+        CaseEventsEvidence.case_id == caseid,
+        CasesEvent.event_in_graph == True
+    )).join(
+        CaseEventsEvidence.event,
+        CaseEventsEvidence.evidence,
+        DataStoreFile.file_local_name,
+    ).all()
+
+    return events
 
 def get_events_categories():
     return EventCategory.query.with_entities(
@@ -153,6 +172,16 @@ def get_event_iocs_ids(event_id, caseid):
 
     return [x[0] for x in iocs_list]
 
+def get_event_evidences_ids(event_id, caseid):
+    iocs_list = CaseEventsEvidence.query.with_entities(
+        CaseEventsEvidence.evidence_id
+    ).filter(
+        CaseEventsEvidence.event_id == event_id,
+        CaseEventsEvidence.case_id == caseid
+    ).all()
+
+    return [x[0] for x in iocs_list]
+
 
 def update_event_assets(event_id, caseid, assets_list):
 
@@ -190,6 +219,29 @@ def update_event_iocs(event_id, caseid, iocs_list):
 
             cea = CaseEventsIoc()
             cea.ioc_id = int(ioc)
+            cea.event_id = event_id
+            cea.case_id = caseid
+
+            db.session.add(cea)
+
+        except Exception as e:
+            return False, str(e)
+
+    db.session.commit()
+    return True, ''
+
+def update_event_evidences(event_id, caseid, evidences_list):
+
+    CaseEventsEvidence.query.filter(
+        CaseEventsEvidence.event_id == event_id,
+        CaseEventsEvidence.case_id == caseid
+    ).delete()
+
+    for evidence in evidences_list:
+        try:
+
+            cea = CaseEventsEvidence()
+            cea.evidence_id = int(evidence)
             cea.event_id = event_id
             cea.case_id = caseid
 
@@ -247,3 +299,23 @@ def get_case_iocs_for_tm(caseid):
         })
 
     return iocs
+
+def get_case_evidences_for_tm(caseid):
+    evidences = [{'evidence_value': '', 'evidence_id': '0'}]
+
+    evidence_list = DataStoreFile.query.with_entities(
+        DataStoreFile.file_local_name,
+        DataStoreFile.file_id
+    ).filter(
+        DataStoreFile.file_case_id == caseid
+    ).order_by(
+        DataStoreFile.file_id
+    ).all()
+
+    for evidence in evidence_list:
+        evidences.append({
+            'evidence_value': "{}".format(evidence.file_local_name),
+            'evidence_id': evidence.file_id
+        })
+
+    return evidences
