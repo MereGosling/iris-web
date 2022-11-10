@@ -95,7 +95,7 @@ def get_case_events_evidence_graph(caseid):
     )).join(
         CaseEventsEvidence.event,
         CaseEventsEvidence.evidence,
-        DataStoreFile.file_local_name,
+        #DataStoreFile.file_local_name,
     ).all()
 
     return events
@@ -173,14 +173,14 @@ def get_event_iocs_ids(event_id, caseid):
     return [x[0] for x in iocs_list]
 
 def get_event_evidences_ids(event_id, caseid):
-    iocs_list = CaseEventsEvidence.query.with_entities(
+    evidences_list = CaseEventsEvidence.query.with_entities(
         CaseEventsEvidence.evidence_id
     ).filter(
         CaseEventsEvidence.event_id == event_id,
         CaseEventsEvidence.case_id == caseid
     ).all()
 
-    return [x[0] for x in iocs_list]
+    return [x[0] for x in evidences_list]
 
 
 def update_event_assets(event_id, caseid, assets_list):
