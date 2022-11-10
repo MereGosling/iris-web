@@ -311,6 +311,7 @@ function build_timeline(data) {
 
     var standard_filters = [
                 {value: 'asset:', score: 10, meta: 'Match assets of events'},
+                {value: 'evidence:', score: 10, meta: 'Match evidence of events'},
                 {value: 'startDate:', score: 10, meta: 'Match end date of events'},
                 {value: 'endDate:', score: 10, meta: 'Match end date of events'},
                 {value: 'tag:', score: 10, meta: 'Match tag of events'},
@@ -770,7 +771,7 @@ function reset_filters() {
 }
 
 function apply_filtering(post_req_fn) {
-    keywords = ['asset', 'tag', 'title', 'description', 'ioc', 'category', 'source',  'raw', 'startDate', 'endDate'];
+    keywords = ['asset', 'evidence', 'tag', 'title', 'description', 'ioc', 'category', 'source',  'raw', 'startDate', 'endDate'];
     parsed_filter = {};
     parse_filter(tm_filter.getValue(), keywords);
     filter_query = encodeURIComponent(JSON.stringify(parsed_filter));

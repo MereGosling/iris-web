@@ -304,7 +304,7 @@ def get_case_evidences_for_tm(caseid):
     evidences = [{'evidence_value': '', 'evidence_id': '0'}]
 
     evidence_list = DataStoreFile.query.with_entities(
-        DataStoreFile.file_local_name,
+        DataStoreFile.file_original_name,
         DataStoreFile.file_id
     ).filter(
         DataStoreFile.file_case_id == caseid
@@ -314,7 +314,7 @@ def get_case_evidences_for_tm(caseid):
 
     for evidence in evidence_list:
         evidences.append({
-            'evidence_value': "{}".format(evidence.file_local_name),
+            'evidence_value': "{}".format(evidence.file_original_name),
             'evidence_id': evidence.file_id
         })
 

@@ -265,7 +265,7 @@ $('#event_category_id').selectpicker({
             {% for e in evidences %}
                 {
                     id: {{ e.evidence_id }},
-                    text: {{ e.file_local_name  }}
+                    text: {{ e.evidence_value| tojson }}
                 },
             {% endfor %}
         ];

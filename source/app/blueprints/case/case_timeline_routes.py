@@ -56,7 +56,7 @@ from app.iris_engine.utils.common import parse_bf_date_format
 from app.iris_engine.utils.tracker import track_activity
 from app.models.cases import Cases
 from app.models.cases import CasesEvent
-from app.models.models import AssetsType, CaseEventsEvidence
+from app.models.models import AssetsType, CaseEventsEvidence, DataStoreFile
 from app.models.models import CaseAssets
 from app.models.models import CaseEventsAssets
 from app.models.models import CaseEventsIoc
@@ -241,6 +241,16 @@ def case_gettimeline_api(asset_id, caseid):
         CaseEventsIoc.ioc
     ).all()
 
+    evidence_cache = CaseEventsEvidence.query.with_entities(
+        CaseEventsEvidence.evidence_id,
+        DataStoreFile.file_original_name,
+        CaseEventsEvidence.event_id
+    ).filter(
+        CaseEventsEvidence.case_id == caseid
+    ).join(
+        CaseEventsEvidence.evidence
+    ).all()
+
     tim = []
     for row in timeline:
         ras = row._asdict()
@@ -267,6 +277,17 @@ def case_gettimeline_api(asset_id, caseid):
 
         ras['iocs'] = alki
 
+        alki = []
+        cache = {}
+        for evidence in evidence_cache:
+            if evidence.event_id == ras['event_id']:
+                if evidence.evidence_id not in cache:
+                    cache[evidence.evidence_id] = evidence.file_original_name
+
+                alki.append(evidence._asdict())
+
+        ras['evidence'] = alki
+
         tim.append(ras)
 
     resp = {
@@ -292,6 +313,7 @@ def case_filter_timeline(caseid):
 
     assets = filter_d.get('asset')
     iocs = filter_d.get('ioc')
+    evidence = filter_d.get('evidence')
     tags = filter_d.get('tag')
     descriptions = filter_d.get('description')
     categories = filter_d.get('category')
@@ -308,6 +330,9 @@ def case_filter_timeline(caseid):
 
     if iocs:
         iocs = [ioc.lower() for ioc in iocs]
+
+    if evidence:
+        evidence = [e.lower() for e in evidence]
 
     if tags:
         for tag in tags:
@@ -402,6 +427,16 @@ def case_filter_timeline(caseid):
         CaseEventsIoc.ioc
     ).all()
 
+    evidence_cache = CaseEventsEvidence.query.with_entities(
+        CaseEventsEvidence.evidence_id,
+        DataStoreFile.file_original_name,
+        CaseEventsEvidence.event_id
+    ).filter(
+        CaseEventsEvidence.case_id == caseid
+    ).join(
+        CaseEventsEvidence.evidence
+    ).all()
+
     assets_map = {}
     cache = {}
     for asset in assets_cache:
@@ -426,6 +461,12 @@ def case_filter_timeline(caseid):
             if ioc.event_id not in iocs_filter and ioc.ioc_value.lower() in iocs:
                 iocs_filter.append(ioc.event_id)
 
+    evidence_filter = []
+    if evidence:
+        for e in evidence_cache:
+            if e.event_id not in evidence_filter and e.file_original_name.lower() in evidence:
+                evidence_filter.append(e.event_id)
+
     tim = []
     for row in timeline:
         if assets is not None:
@@ -434,6 +475,10 @@ def case_filter_timeline(caseid):
 
         if iocs is not None:
             if row.event_id not in iocs_filter:
+                continue
+
+        if evidence is not None:
+            if row.event_id not in evidence_filter:
                 continue
 
         ras = row._asdict()
@@ -471,6 +516,21 @@ def case_filter_timeline(caseid):
                 )
 
         ras['iocs'] = alki
+
+        alki = []
+        for e in evidence_cache:
+            if e.event_id == ras['event_id']:
+                if e.evidence_id not in cache:
+                    cache[e.evidence_id] = [e.file_original_name]
+
+                alki.append(
+                    {
+                        "name": "{}".format(e.file_original_name),
+                        "description": e.evidence_id
+                    }
+                )
+
+        ras['evidence'] = alki
 
         tim.append(ras)
 
@@ -648,7 +708,7 @@ def case_edit_event(cur_id, caseid):
 
         success, log = update_event_evidences(event_id=event.event_id,
                                          caseid=caseid,
-                                         ievidences_list=request_data.get('event_evidence'))
+                                         evidences_list=request_data.get('event_evidence'))
         if not success:
             return response_error('Error while saving linked evidences', data=log)
 
@@ -734,7 +794,7 @@ def case_add_event(caseid):
 
         success, log = update_event_evidences(event_id=event.event_id,
                                          caseid=caseid,
-                                         ievidences_list=request_data.get('event_evidence'))
+                                         evidences_list=request_data.get('event_evidence'))
         if not success:
             return response_error('Error while saving linked evidences', data=log)
 

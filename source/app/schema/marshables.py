@@ -214,6 +214,7 @@ class EventSchema(ma.SQLAlchemyAutoSchema):
     event_title = auto_field('event_title', required=True, validate=Length(min=2), allow_none=False)
     event_assets = fields.List(fields.Integer, required=True, allow_none=False)
     event_iocs = fields.List(fields.Integer, required=True, allow_none=False)
+    event_evidence = fields.List(fields.Integer, required=True, allow_none=False)
     event_date = fields.DateTime("%Y-%m-%dT%H:%M:%S.%f", required=True, allow_none=False)
     event_tz = fields.String(required=True, allow_none=False)
     event_category_id = fields.Integer(required=True, allow_none=False)
